@@ -9,4 +9,4 @@ WHERE
   a.pid = s.pid
   AND a.datname = current_database()
 GROUP BY
-  1, 2
+  1, 2;

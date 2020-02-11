@@ -38,6 +38,7 @@ def get_all_monitored_dbs():
           date_trunc('second', md_last_modified_on) as md_last_modified_on,
           md_config::text,
           md_custom_tags::text,
+          md_host_config::text,
           coalesce(md_include_pattern, '') as md_include_pattern,
           coalesce(md_exclude_pattern, '') as md_exclude_pattern
         from
@@ -55,6 +56,7 @@ def get_monitored_db_by_id(id):
           date_trunc('second', md_last_modified_on) as md_last_modified_on,
           md_config::text,
           md_custom_tags::text,
+          md_host_config::text,
           coalesce(md_include_pattern, '') as md_include_pattern,
           coalesce(md_exclude_pattern, '') as md_exclude_pattern
         from
@@ -89,7 +91,7 @@ def get_preset_configs():
     sql = """
         select
           pc_name, pc_description, pc_config::text, date_trunc('second', pc_last_modified_on)::text as pc_last_modified_on,
-          coalesce((select array_to_string(array_agg(md_unique_name order by md_unique_name), ',')
+          coalesce((select array_to_string(array_agg(md_unique_name order by md_unique_name), ', ')
             from pgwatch2.monitored_db where md_preset_config_name = pc_name and md_is_enabled
             group by md_preset_config_name), '') as active_dbs
         from
@@ -117,12 +119,12 @@ def get_active_metrics_with_versions():
 def get_all_metrics():
     sql = """
         select
-          m_id, m_name, m_pg_version_from, m_sql, coalesce(m_comment, '') as m_comment, m_is_active, m_is_helper, 
+          m_id, m_name, m_pg_version_from, m_sql, m_sql_su, coalesce(m_comment, '') as m_comment, m_is_active, m_is_helper,
           date_trunc('second', m_last_modified_on) as m_last_modified_on, m_master_only, m_standby_only, coalesce(m_column_attrs::text, '') as m_column_attrs
         from
           pgwatch2.metric
         order by
-          m_is_active desc, m_name
+          m_is_active desc, m_name, m_pg_version_from
     """
     return datadb.execute(sql)[0]
 
@@ -195,6 +197,8 @@ def update_monitored_db(params, cmd_args=None):
           md_is_enabled = %(md_is_enabled)s,
           md_preset_config_name = %(md_preset_config_name)s,
           md_config = %(md_config)s,
+          md_host_config = %(md_host_config)s,
+          md_only_if_master = %(md_only_if_master)s,
           md_custom_tags = %(md_custom_tags)s,
           md_statement_timeout_seconds = %(md_statement_timeout_seconds)s,
           md_last_modified_on = now()
@@ -211,8 +215,8 @@ def update_monitored_db(params, cmd_args=None):
             ) as connection_data_changed,
             case when %(md_password)s = '***' and %(md_password_type)s = q_old.md_password_type then q_old.md_password else %(md_password)s end as md_password
     """
-    cherrypy_checkboxes_to_bool(params, ['md_is_enabled', 'md_sslmode', 'md_is_superuser'])
-    cherrypy_empty_text_to_nulls(params, ['md_preset_config_name', 'md_config', 'md_custom_tags'])
+    cherrypy_checkboxes_to_bool(params, ['md_is_enabled', 'md_sslmode', 'md_is_superuser', 'md_only_if_master'])
+    cherrypy_empty_text_to_nulls(params, ['md_preset_config_name', 'md_config', 'md_custom_tags', 'md_host_config'])
     if params['md_dbtype'] == 'postgres-continuous-discovery':
         params['md_dbname'] = ''
     
@@ -220,6 +224,9 @@ def update_monitored_db(params, cmd_args=None):
     if err:
         raise Exception('Failed to update "monitored_db": ' + err)
     ret.append('Updated!')
+
+    if params['md_dbtype'] in ['patroni', 'patroni-continuous-discovery']:
+        return ret  # check if DCS is accessible?
 
     # check connection if connect string changed or inactive host activated
     if data[0]['connection_data_changed'] or (old_row_data and (not old_row_data['md_is_enabled'] and params['md_is_enabled'])):  # show warning when changing connect data but cannot connect
@@ -239,22 +246,30 @@ def update_monitored_db(params, cmd_args=None):
 
 def insert_monitored_db(params, cmd_args=None):
     ret = []
+    # to enable adding DBs via POST requests where nonmandatory fields are not specified
+    expected_monitored_db_params = [ ('md_port', '5432'), ('md_password', ''),
+          ('md_root_ca_path', ''), ('md_client_cert_path', ''), ('md_client_key_path', ''), ('md_config', ''), ('md_statement_timeout_seconds', '5'), ('md_dbtype', 'postgres'),
+          ('md_only_if_master', False), ( 'md_custom_tags', ''), ('md_host_config', ''), ('md_include_pattern', ''), ('md_exclude_pattern', ''), ('md_group', 'default'),
+          ('md_password_type', 'plain-text'), ('md_sslmode', 'disable')]
+    for p, default in expected_monitored_db_params:
+        if not p in params:
+            params[p] = default
     sql_insert_new_db = """
         insert into
           pgwatch2.monitored_db (md_unique_name, md_hostname, md_port, md_dbname, md_user, md_password, md_password_type, md_is_superuser,
           md_sslmode, md_root_ca_path,md_client_cert_path, md_client_key_path, md_is_enabled, md_preset_config_name, md_config, md_statement_timeout_seconds, md_dbtype,
-          md_include_pattern, md_exclude_pattern, md_custom_tags, md_group)
+          md_include_pattern, md_exclude_pattern, md_custom_tags, md_group, md_host_config, md_only_if_master)
         values
           (%(md_unique_name)s, %(md_hostname)s, %(md_port)s, %(md_dbname)s, %(md_user)s, %(md_password)s, %(md_password_type)s, %(md_is_superuser)s,
           %(md_sslmode)s, %(md_root_ca_path)s, %(md_client_cert_path)s, %(md_client_key_path)s, %(md_is_enabled)s, %(md_preset_config_name)s, %(md_config)s, %(md_statement_timeout_seconds)s, %(md_dbtype)s,
-          %(md_include_pattern)s, %(md_exclude_pattern)s, %(md_custom_tags)s, %(md_group)s)
+          %(md_include_pattern)s, %(md_exclude_pattern)s, %(md_custom_tags)s, %(md_group)s, %(md_host_config)s, %(md_only_if_master)s)
         returning
           md_id
     """
     sql_active_dbs = "select datname from pg_database where not datistemplate and datallowconn"
-    cherrypy_checkboxes_to_bool(params, ['md_is_enabled', 'md_sslmode', 'md_is_superuser'])
+    cherrypy_checkboxes_to_bool(params, ['md_is_enabled', 'md_sslmode', 'md_is_superuser', 'md_only_if_master'])
     cherrypy_empty_text_to_nulls(
-        params, ['md_preset_config_name', 'md_config', 'md_custom_tags'])
+        params, ['md_preset_config_name', 'md_config', 'md_custom_tags', 'md_host_config'])
     password_plain = params['md_password']
     if password_plain == '***':
         raise Exception("'***' cannot be used as password, denotes unchanged password")
@@ -266,7 +281,7 @@ def insert_monitored_db(params, cmd_args=None):
         else:
             params['md_password'] = crypto.encrypt(cmd_args.aes_gcm_keyphrase, password_plain)
 
-    if not params['md_dbname'] and params['md_dbtype'] != 'postgres-continuous-discovery':     # add all DBs found
+    if not params['md_dbname'] and params['md_dbtype'] not in ['postgres-continuous-discovery', 'patroni', 'patroni-continuous-discovery']:     # add all DBs found
         if params['md_dbtype'] == 'postgres':
             # get all active non-template DBs from the entered host
             active_dbs_on_host, err = datadb.executeOnRemoteHost(sql_active_dbs, host=params['md_hostname'], port=params['md_port'],
@@ -326,12 +341,16 @@ def insert_monitored_db(params, cmd_args=None):
             else:
                 ret.append('{} DBs added: {}'.format(len(dbs_to_add), ', '.join(dbs_to_add)))
     else:   # only 1 DB
-        if params['md_dbtype'] == 'postgres-continuous-discovery':
+        if params['md_dbtype'] in ['postgres-continuous-discovery', 'patroni-continuous-discovery']:
             params['md_dbname'] = ''
         data, err = datadb.execute(sql_insert_new_db, params)
         if err:
             raise Exception('Failed to insert into "monitored_db": ' + err)
         ret.append('Host with ID {} added!'.format(data[0]['md_id']))
+
+        if params['md_dbtype'] in ['patroni', 'patroni-continuous-discovery']:
+            ret.append('Actual DB hosts will be discovered by the metrics daemon via DCS')  # check if DCS is accessible? would cause more deps...
+            return ret
 
         if params['md_dbtype'] == 'postgres-continuous-discovery':
             params['md_dbname'] = 'template1'
@@ -401,6 +420,7 @@ def update_metric(params):
           m_name = %(m_name)s,
           m_pg_version_from = %(m_pg_version_from)s,
           m_sql = %(m_sql)s,
+          m_sql_su = %(m_sql_su)s,
           m_comment = %(m_comment)s,
           m_is_active = %(m_is_active)s,
           m_is_helper = %(m_is_helper)s,
@@ -412,6 +432,7 @@ def update_metric(params):
           m_id = %(m_id)s
     """
     cherrypy_checkboxes_to_bool(params, ['m_is_active', 'm_is_helper', 'm_master_only', 'm_standby_only'])
+    cherrypy_empty_text_to_nulls(params, ['m_column_attrs'])
     ret, err = datadb.execute(sql, params)
     if err:
         raise Exception('Failed to update "metric": ' + err)
@@ -420,12 +441,13 @@ def update_metric(params):
 def insert_metric(params):
     sql = """
         insert into
-          pgwatch2.metric (m_name, m_pg_version_from, m_sql, m_comment, m_is_active, m_is_helper, m_master_only, m_standby_only, m_column_attrs)
+          pgwatch2.metric (m_name, m_pg_version_from, m_sql, m_sql_su, m_comment, m_is_active, m_is_helper, m_master_only, m_standby_only, m_column_attrs)
         values
-          (%(m_name)s, %(m_pg_version_from)s, %(m_sql)s, %(m_comment)s, %(m_is_active)s, %(m_is_helper)s, %(m_master_only)s, %(m_standby_only)s, , %(m_column_attrs)s)
+          (%(m_name)s, %(m_pg_version_from)s, %(m_sql)s, %(m_sql_su)s, %(m_comment)s, %(m_is_active)s, %(m_is_helper)s, %(m_master_only)s, %(m_standby_only)s, %(m_column_attrs)s)
         returning m_id
     """
     cherrypy_checkboxes_to_bool(params, ['m_is_active', 'm_is_helper', 'm_master_only', 'm_standby_only'])
+    cherrypy_empty_text_to_nulls(params, ['m_column_attrs'])
     ret, err = datadb.execute(sql, params)
     if err:
         raise Exception('Failed to insert into "metric": ' + err)

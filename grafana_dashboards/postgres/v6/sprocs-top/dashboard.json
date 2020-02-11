@@ -21,6 +21,7 @@
   "panels": [
     {
       "columns": [],
+      "datasource": null,
       "description": "As per  \"sproc_stats\" measurement. Needs track_functions parameter set to 'pl' on monitored DBs.",
       "fontSize": "100%",
       "gridPos": {
@@ -31,6 +32,7 @@
       },
       "id": 2,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -76,7 +78,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Sproc details' dashboard for that sproc",
-          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell",
+          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell&from=$__from&to=$__to",
           "pattern": "function_full_name",
           "thresholds": [],
           "type": "string",
@@ -99,7 +101,6 @@
           "unit": "short"
         },
         {
-          "$hashKey": null,
           "alias": "",
           "colorMode": null,
           "colors": [
@@ -107,10 +108,12 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "decimals": 2,
-          "pattern": "/.*/",
+          "mappingType": 1,
+          "pattern": "oid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         }
       ],
@@ -173,6 +176,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "As per  \"sproc_stats\" measurement. Needs track_functions parameter set to 'pl' on monitored DBs.",
       "fontSize": "100%",
       "gridPos": {
@@ -183,6 +187,7 @@
       },
       "id": 5,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -228,7 +233,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Sproc details' dashboard for that sproc",
-          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell",
+          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell&from=$__from&to=$__to",
           "pattern": "function_full_name",
           "thresholds": [],
           "type": "string",
@@ -251,7 +256,6 @@
           "unit": "short"
         },
         {
-          "$hashKey": null,
           "alias": "",
           "colorMode": null,
           "colors": [
@@ -259,10 +263,12 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "decimals": 2,
-          "pattern": "/.*/",
+          "mappingType": 1,
+          "pattern": "oid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         }
       ],
@@ -325,6 +331,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "As per  \"sproc_stats\" measurement. Needs track_functions parameter set to 'pl' on monitored DBs.",
       "fontSize": "100%",
       "gridPos": {
@@ -335,6 +342,7 @@
       },
       "id": 4,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -380,7 +388,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Sproc details' dashboard for that sproc",
-          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell",
+          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell&from=$__from&to=$__to",
           "pattern": "function_full_name",
           "thresholds": [],
           "type": "string",
@@ -403,7 +411,6 @@
           "unit": "ms"
         },
         {
-          "$hashKey": null,
           "alias": "",
           "colorMode": null,
           "colors": [
@@ -411,10 +418,12 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "decimals": 2,
-          "pattern": "/.*/",
+          "mappingType": 1,
+          "pattern": "oid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         }
       ],
@@ -477,6 +486,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "As per  \"sproc_stats\" measurement. Needs track_functions parameter set to 'pl' on monitored DBs.",
       "fontSize": "100%",
       "gridPos": {
@@ -487,6 +497,7 @@
       },
       "id": 3,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -532,7 +543,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Sproc details' dashboard for that sproc",
-          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell",
+          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell&from=$__from&to=$__to",
           "pattern": "function_full_name",
           "thresholds": [],
           "type": "string",
@@ -555,7 +566,6 @@
           "unit": "short"
         },
         {
-          "$hashKey": null,
           "alias": "",
           "colorMode": null,
           "colors": [
@@ -563,10 +573,12 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "decimals": 2,
-          "pattern": "/.*/",
+          "mappingType": 1,
+          "pattern": "oid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         }
       ],
@@ -629,6 +641,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "As per  \"sproc_stats\" measurement. Needs track_functions parameter set to 'pl' on monitored DBs.",
       "fontSize": "100%",
       "gridPos": {
@@ -639,6 +652,7 @@
       },
       "id": 6,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -684,7 +698,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Sproc details' dashboard for that sproc",
-          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell",
+          "linkUrl": "/dashboard/db/sproc-details?var-dbname=$dbname&var-sproc_name=$__cell&from=$__from&to=$__to",
           "pattern": "function_full_name",
           "thresholds": [],
           "type": "string",
@@ -707,7 +721,6 @@
           "unit": "short"
         },
         {
-          "$hashKey": null,
           "alias": "",
           "colorMode": null,
           "colors": [
@@ -715,10 +728,12 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "decimals": 2,
-          "pattern": "/.*/",
+          "mappingType": 1,
+          "pattern": "oid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         }
       ],
@@ -778,6 +793,51 @@
       "title": "By Avg. Self Runtime",
       "transform": "table",
       "type": "table"
+    },
+    {
+      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2019/05/Cybertec_Logo_wei%C3%9F-transparent_300x80px-01.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 8,
+      "links": [],
+      "mode": "html",
+      "options": {},
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": false,
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "",
+      "transparent": true,
+      "type": "text"
     }
   ],
   "schemaVersion": 18,
@@ -789,7 +849,7 @@
         "allValue": null,
         "current": {
           "text": null,
-          "value": null
+          "text": null
         },
         "datasource": null,
         "definition": "",

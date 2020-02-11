@@ -27,6 +27,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "description": "Avg. of all DBs over the whole selected period",
       "editable": true,
       "error": false,
@@ -82,7 +83,7 @@
       "targets": [
         {
           "alias": "TPS",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -155,6 +156,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "decimals": 1,
       "description": "Avg. of all DBs over the whole selected period",
       "editable": true,
@@ -212,7 +214,7 @@
       "targets": [
         {
           "alias": "QPS",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -285,6 +287,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "description": "Avg. of all DBs over the whole selected period for regular (>10 calls) queries",
       "editable": true,
       "error": false,
@@ -341,7 +344,7 @@
       "targets": [
         {
           "alias": "avg_query_runtime_per_db",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -415,6 +418,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "decimals": 1,
       "description": "Sum of all DB changes over the whole selected period",
       "editable": true,
@@ -472,7 +476,7 @@
       "targets": [
         {
           "alias": "db_size_change_last_hour",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -546,8 +550,9 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "decimals": 1,
-      "description": "Sum of all DB changes over the whole selected period",
+      "description": "Sum of all DBs. Based on a SQL based approximate.",
       "editable": true,
       "error": false,
       "format": "bytes",
@@ -603,7 +608,7 @@
       "targets": [
         {
           "alias": "Bloat size",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -626,7 +631,7 @@
           "policy": "default",
           "query": "select sum(bloat) from (SELECT last(\"approx_free_space_b\") - first(\"approx_free_space_b\") as bloat FROM \"table_bloat_approx_summary\" WHERE \"dbname\" =~ /^$dbname$/ AND $timeFilter GROUP BY dbname, time(3650d) fill(none))",
           "rawQuery": true,
-          "rawSql": "select\n  time,\n  sum(last_bloat_size) as total_bloat_size\nfrom (\nselect\n  time,\n  dbname,\n  max(last_value) as last_bloat_size\nfrom (\n  select\n    date_trunc('hour', time) as time,\n    dbname,\n    last_value((data->'approx_free_space_b')::int8) over w\n  from\n    table_bloat_approx_summary\n  where \n    dbname in ($dbname)\n    and $__timeFilter(time)\n  window w as (\n     partition by dbname, date_trunc('hour', time) order by time rows BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING\n  )\n) x\ngroup by 1, 2\n) y\ngroup by 1\norder by 1",
+          "rawSql": "select\n  $__unixEpochFrom() as time,\n  sum(bloat) from\n(\n\n  select distinct on (dbname)\n    dbname,\n    time,\n    (data->'approx_table_bloat_b')::int8 as bloat\n  from\n    table_bloat_approx_summary_sql\n  where \n    dbname in ($dbname)\n    and $__timeFilter(time)\n  order by\n    dbname, time\n\n) a    \n\nunion all\n\nselect\n  $__unixEpochTo() as time,\n  sum(bloat)\nfrom (\n\n  select distinct on (dbname)\n    dbname,\n    time,\n    (data->'approx_table_bloat_b')::int8 as bloat\n  from\n    table_bloat_approx_summary_sql\n  where \n    dbname in ($dbname)\n    and $__timeFilter(time)\n  order by\n    dbname, time desc\n    \n) b",
           "refId": "A",
           "resultFormat": "time_series",
           "select": [
@@ -684,11 +689,12 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
-      "decimals": null,
+      "datasource": null,
+      "decimals": 1,
       "description": "Avg. of all selected DB-s for the whole period",
       "editable": true,
       "error": false,
-      "format": "percent",
+      "format": "none",
       "gauge": {
         "maxValue": 100,
         "minValue": 0,
@@ -769,7 +775,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "CPU Load",
+      "title": "CPU Load Avg.",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -788,6 +794,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "description": "",
       "fill": 1,
@@ -828,7 +835,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -929,6 +936,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "description": "Based on pg_stat_statements.calls",
       "fill": 1,
@@ -969,7 +977,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1070,6 +1078,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "description": "Requires \"pg_stat_statements\" on server. For regular queries (calls >10)",
       "fill": 1,
       "gridPos": {
@@ -1109,7 +1118,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1209,6 +1218,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 0,
       "description": "",
       "fill": 1,
@@ -1249,7 +1259,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1349,6 +1359,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -1387,7 +1398,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1489,6 +1500,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -1535,7 +1547,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1635,6 +1647,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "description": "Requires according \"metric fetching helpers\" on the monitored server",
       "fill": 1,
@@ -1675,7 +1688,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1747,7 +1760,7 @@
       "yaxes": [
         {
           "decimals": 1,
-          "format": "percent",
+          "format": "none",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1776,6 +1789,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -1824,7 +1838,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1936,6 +1950,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "description": "Based on pg_stat_activity info",
       "fill": 1,
@@ -1971,7 +1986,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -2077,6 +2092,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 0,
       "description": "",
       "fill": 1,
@@ -2117,7 +2133,7 @@
       "targets": [
         {
           "alias": "$tag_dbname",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -2175,7 +2191,7 @@
       "title": "Shared buffer hit ratio",
       "tooltip": {
         "shared": true,
-        "sort": 2,
+        "sort": 1,
         "value_type": "individual"
       },
       "type": "graph",
@@ -2211,7 +2227,7 @@
       }
     },
     {
-      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2017/11/Cybertec_Logo_2017_300px_slogan_trans.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
+      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2019/05/Cybertec_Logo_wei%C3%9F-transparent_300x80px-01.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
       "editable": true,
       "error": false,
       "gridPos": {

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir /var/run/grafana && chown grafana /var/run/grafana
+
 if [ ! -f /pgwatch2/persistent-config/self-signed-ssl.key -o ! -f /pgwatch2/persistent-config/self-signed-ssl.pem ] ; then
     openssl req -x509 -newkey rsa:4096 -keyout /pgwatch2/persistent-config/self-signed-ssl.key -out /pgwatch2/persistent-config/self-signed-ssl.pem -days 3650 -nodes -sha256 -subj '/CN=pw2'
     cp /pgwatch2/persistent-config/self-signed-ssl.pem /etc/ssl/certs/ssl-cert-snakeoil.pem
@@ -9,7 +11,8 @@ if [ ! -f /pgwatch2/persistent-config/self-signed-ssl.key -o ! -f /pgwatch2/pers
     chmod -R o+rx /pgwatch2/persistent-config
 fi
 
-if [ -n "$PW2_GRAFANASSL" ] ; then
+GRAFANASSL="${PW2_GRAFANASSL,,}"    # to lowercase
+if [ "$GRAFANASSL" == "1" ] || [ "${GRAFANASSL:0:1}" == "t" ]; then
     $(grep -q 'protocol = http$' /etc/grafana/grafana.ini)
     if [ "$?" -eq 0 ] ; then
         sed -i 's/protocol = http.*/protocol = https/' /etc/grafana/grafana.ini
@@ -62,24 +65,29 @@ else
   su -c "psql -d pgwatch2_metrics -f /pgwatch2/sql/metric_store/metric-time/metric_store_part_time.sql" postgres
   su -c "psql -d pgwatch2_metrics -f /pgwatch2/sql/metric_store/metric-time/ensure_partition_metric_time.sql" postgres
 fi
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/cpu_load_plpythonu.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/stat_statements_wrapper.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/stat_activity_wrapper.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/table_bloat_approx.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/wal_size.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/psutil_cpu.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/psutil_mem.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/psutil_disk.sql" postgres
-su -c "psql -d pgwatch2 -f /pgwatch2/sql/metric_fetching_helpers/psutil_disk_io_total.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_load_average/9.0/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_stat_statements/9.2/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_stat_activity/9.2/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_stat_replication/9.0/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_table_bloat_approx/9.5/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_table_bloat_approx_sql/9.0/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_wal_size/10/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_psutil_cpu/9.1/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_psutil_mem/9.1/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_psutil_disk/9.1/metric.sql" postgres
+su -c "psql -d pgwatch2 -f /pgwatch2/metrics/00_helpers/get_psutil_disk_io_total/9.1/metric.sql" postgres
+su -c "psql -d pgwatch2 -c 'create extension pg_qualstats'" postgres
+su -c "psql -d pgwatch2 -c 'grant select on pg_qualstats_indexes_ddl to pgwatch2'" postgres
 
-if [ -z "$NOTESTDB" ] ; then
+if [ -n "$PW2_TESTDB" ] ; then
   su -c "psql -d pgwatch2 -f /pgwatch2/bootstrap/insert_test_monitored_db.sql" postgres
 fi
 
 touch /pgwatch2/persistent-config/db-bootstrap-done-marker
 
+pg_ctlcluster 11 main stop -- --wait
+
 fi
 
-pg_ctlcluster 11 main start -- --wait
 
-exec /usr/bin/supervisord --configuration=/etc/supervisor/supervisord.conf --nodaemon
+exec /usr/local/bin/supervisord --configuration=/etc/supervisor/supervisord.conf --nodaemon

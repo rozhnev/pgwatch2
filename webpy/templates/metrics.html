@@ -3,67 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>Pgwatch2 :: Metrics and preset configs</title>
-    <link rel="stylesheet" href="/static/bootstrap-3.3.7-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/bootstrap-4.3.1-dist/css/bootstrap.min.css">
 </head>
 <body>
 
-<nav class="navbar navbar-default">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-    </div>
+<div class="container-fluid">
 
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li><a href="/"><h4>pgwatch2</h4></a></li>
-        <li><a href="https://www.cybertec-postgresql.com/en/"><img src="/static/logo.png" alt="Cybertec" height="35px"></a></li>
-      </ul>
-      <ul class="nav navbar-nav navbar-right">
-        <li><a href="/dbs">DBs</a></li>
-        <li><a href="#">|</a></li>
-        <li class="active"><a href="/metrics">Metric definitions<span class="sr-only"></span></a></li>
-        <li><a href="#">|</a></li>
-        <li><a href="/stats-summary">Stats summary</a></li>
+    <nav class="navbar navbar-expand-md navbar-light bg-light mb-2">
+
+    <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+            <a class="nav-link" href="/"><h4>pgwatch2</h4></a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="https://www.cybertec-postgresql.com/en/"><img src="/static/logo.png" alt="Cybertec logo" height="40px"></a>
+        </li>
+    </ul>
+
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <a class="nav-link" href="/dbs">DBs</a>
+        </li>
+        <li class="nav-item active">
+            <a class="nav-link" href="/metrics">Metric definitions</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/stats-summary" title="Hint - Grafana is the preferred metrics browser">Stats summary</a>
+        </li>
         {% if not no_component_logs %}
-        <li><a href="#">|</a></li>
-        <li class="dropdown" title="Logs will open in a new window">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Logs<span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="/logs/pgwatch2/200" target="_blank">Pgwatch2 [last 200 lines]</a></li>
-            <li><a href="/logs/influxdb/200" target="_blank">InfluxDB [last 200 lines]</a></li>
-            <li><a href="/logs/grafana/200" target="_blank">Grafana [last 200 lines]</a></li>
-            <li><a href="/logs/postgres/200" target="_blank">Postgres [last 200 lines]</a></li>
-            <li><a href="/logs/webui/200" target="_blank">Web UI [last 200 lines]</a></li>
-            <li><a href="/versions" target="_blank">Component versions</a></li>
-          </ul>
+        <li class="nav-item dropdown" title="Logs will open in a new window">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown">Logs</a>
+            <div class="dropdown-menu dropdown-menu-right">
+                <a class="dropdown-item" href="/logs/pgwatch2/200" target="_blank">Pgwatch2 [last 200 lines]</a>
+                <a class="dropdown-item" href="/logs/influxdb/200" target="_blank">InfluxDB [last 200 lines]</a>
+                <a class="dropdown-item" href="/logs/grafana/200" target="_blank">Grafana [last 200 lines]</a>
+                <a class="dropdown-item" href="/logs/postgres/200" target="_blank">Postgres [last 200 lines]</a>
+                <a class="dropdown-item" href="/logs/webui/200" target="_blank">Web UI [last 200 lines]</a>
+                <a class="dropdown-item" href="/versions" target="_blank">Component versions</a>
+            </div>
         </li>
         {% endif %}
+
         {% if no_anonymous_access and session['logged_in'] %}
-        <li><a href="#">|</a></li>
-        <li><a href="/logout">Log out</a></li>
+        <li class="nav-item">
+            <a class="nav-link" href="/logout">Logout</a>
+        </li>
         {% endif %}
-      </ul>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
 
+    </ul>
+    </nav>
 
-
+</div>
 
 <div class="container-fluid">
 
 {% if messages %}
     {% for message in messages: %}
-    <div class="alert alert-warning alert-dismissible" role="alert">
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-      {{message}}
+    <div class="row">
+        <div class="col alert alert-warning alert-dismissible fade show" role="alert">
+            {{message}}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
     </div>
     {% endfor %}
 {% endif %}
@@ -99,12 +101,12 @@
             {% endfor %}
             <tr>
                 <form action="/metrics" method="post">
-                    <td><input type="text" name="pc_name" value="" size="10"></td>
+                    <td><input type="text" id="pc_name" name="pc_name" value="" size="10"></td>
                     <td><input type="text" name="pc_description" value=""></td>
-                    <td><textarea name="pc_config" cols="50"></textarea></td>
+                    <td><textarea id="pc_config" name="pc_config" cols="50">{"metric": interval_seconds, ...}</textarea></td>
                     <td></td>
                     <td></td>
-                    <td><input type="submit" name="new" value="New"></td>
+                    <td><input type="submit" id="new" name="new" value="New"></td>
                     <td></td>
                 </form>
             </tr>
@@ -129,12 +131,13 @@
                 <td>Metric</td>
                 <td>PG version from</td>
                 <td title="NB! 'epoch_ns' column needs to be always present">SQL</td>
+                <td title="Will be used instead of normal SQL if monitoring user is a superuser (recommended only on localhost usage) or if first try with normal SQL fails. Helps to avoid creating helper functions (aka altering the DB state in any way) for Postgres-native metrics">Privileged SQL</td>
                 <td>Comment</td>
                 <td>Is active?</td>
                 <td title="Code for metric fetching helpers. Not to be used for normal metrics gathering">Is helper?</td>
                 <td title="Execute only on masters">Master only?</td>
                 <td title="Execute only on standbys">Standby only?</td>
-                <td title="Column attributes. Use to specify Prometheus Gauge type columns">Column attributes</td>
+                <td title="Column attributes. Use to specify Prometheus Gauge type columns. 'Gauge' means non-cumulative columns.">Column attributes</td>
                 <td>Last modified</td>
                 <td></td>
                 <td></td>
@@ -150,12 +153,13 @@
                     </td>
                     <td><input type="text" name="m_pg_version_from" value="{{row['m_pg_version_from']}}" title="Version from"></td>
                     <td><textarea name="m_sql" cols="50" title="SQL for metric">{{row['m_sql']}}</textarea></td>
+                    <td><textarea name="m_sql_su" cols="50" title="Privileged (superuser or pg_monitor grant) SQL for metric">{{row['m_sql_su']}}</textarea></td>
                     <td><input type="text" name="m_comment" value="{{row['m_comment']}}" title="Comment"></td>
                     <td><input type="checkbox" name="m_is_active" {% if row['m_is_active'] %}checked{% endif %} title="Is active?"></td>
                     <td><input type="checkbox" name="m_is_helper" {% if row['m_is_helper'] %}checked{% endif %} title="Is helper?"></td>
                     <td><input type="checkbox" name="m_master_only" {% if row['m_master_only'] %}checked{% endif %} title="Master only?"></td>
                     <td><input type="checkbox" name="m_standby_only" {% if row['m_standby_only'] %}checked{% endif %} title="Standby only?"></td>
-                    <td><textarea name="m_column_attrs" cols="30" title="Column attributes. Use to specify Prometheus Gauge type columns">{{row['m_column_attrs']}}</textarea></td>
+                    <td><textarea name="m_column_attrs" cols="30" title="Column attributes. Use to specify Prometheus Gauge type columns. 'Gauge' means non-cumulative columns.">{{row['m_column_attrs']}}</textarea></td>
                     <td>{{row['m_last_modified_on']}}</td>
                     <td><input type="submit" name="metric_save" value="Save" class="metric_save"></td>
                     <td><input type="submit" name="metric_delete" value="Delete" class="delete"></td>
@@ -167,12 +171,13 @@
                     <td><input type="text" name="m_name" value="" title="Metric name. Lowercase alphanumerics and underscores allowed." pattern="[a-z0-9_]+"></td>
                     <td><input type="text" name="m_pg_version_from" value="9.0" title="Version from"></td>
                     <td><textarea name="m_sql" cols="50" title="SQL for metric">SELECT (extract(epoch from now()) * 1e9)::int8 as epoch_ns, ...</textarea></td>
+                    <td><textarea name="m_sql_su" cols="50" title="Privileged (superuser or pg_monitor grant) SQL for metric"></textarea></td>
                     <td><input type="text" name="m_comment" value=""  title="Comment"></td>
                     <td><input type="checkbox" name="m_is_active"  title="Is active?" checked></td>
                     <td><input type="checkbox" name="m_is_helper" title="Is helper?"></td>
                     <td><input type="checkbox" name="m_master_only" title="Master only?"></td>
                     <td><input type="checkbox" name="m_standby_only" title="Standby only?"></td>
-                    <td><textarea name="m_column_attrs" cols="30" title="Column attributes. Use to specify Prometheus Gauge type columns"></textarea></td>
+                    <td><textarea name="m_column_attrs" cols="30" title="Column attributes. Use to specify Prometheus Gauge type columns. 'Gauge' means non-cumulative columns.">{"prometheus_all_gauge_columns": true}</textarea></td>
                     <td></td>
                     <td><input type="submit" name="metric_new" value="New"></td>
                     <td></td>
@@ -188,14 +193,27 @@
 
 </div>
 
-<script src="/static/jquery-3.1.1.min.js"></script>
-<script src="/static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script src="/static/jquery-3.4.1.min.js"></script>
+<script src="/static/bootstrap-4.3.1-dist/js/bootstrap.min.js"></script>
 
 <script>
     $( document ).ready(function() {
         $(".delete").click(function(e){
             var r = confirm("Delete?");
             if (r == false) {
+                e.preventDefault();
+            }
+        });
+        $("#new").click(function(e){
+            if ($('#pc_name').val() == '') {
+                alert('Preset config name is empty!');
+                e.preventDefault();
+            }
+            pc_config = $('#pc_config').val()
+            try {
+                JSON.parse(pc_config);
+            } catch (ex) {
+                alert('Preset config is not valid JSON!');
                 e.preventDefault();
             }
         });

@@ -4,7 +4,7 @@ NB! Some variables influence multiple components. Command line parameters overri
 
 ## Docker image specific
 
-- **NOTESTDB** When set, the config DB won't be added to monitoring as "test". Default: -
+- **PW2_TESTDB** When set, the config DB itself will be added to monitoring as "test". Default: -
 - **PW2_PG_SCHEMA_TYPE** Enables to choose different metric storage models for the "pgwatch2-postgres" image - [metric-time|metric-dbname-time]. Default: metric-time
 
 ## Gatherer daemon
@@ -54,6 +54,11 @@ NB! Some variables influence multiple components. Command line parameters overri
 - **PW2_TESTDATA_MULTIPLIER** For how many hosts to generate data. Requires Ad-hoc params to be set also.
 - **PW2_PROMETHEUS_PORT** Prometheus port. Effective with --datastore=prometheus. Default: 9187
 - **PW2_PROMETHEUS_LISTEN_ADDR** Network interface to listen on". Default: "0.0.0.0"
+- **PW2_ADD_SYSTEM_IDENTIFIER** Add system identifier to each captured metric (PG10+). Default: false
+- **PW2_SYSTEM_IDENTIFIER_FIELD** Control name of the "system identifier" field. Default: sys_id
+- **PW2_SERVERS_REFRESH_LOOP_SECONDS** Sleep time for the main loop. Default: 120
+- **PW2_VERSION** Show Git build version and exit.
+- **PW2_PING** Try to connect to all configured DB-s, report errors and then exit.
 
 
 ## Web UI

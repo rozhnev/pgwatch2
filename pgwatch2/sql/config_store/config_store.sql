@@ -1,9 +1,5 @@
 create schema if not exists pgwatch2 authorization pgwatch2;
 
-create extension if not exists pg_stat_statements; -- NB! for demo purposes only, can fail
-
-create extension if not exists plpythonu; -- NB! for demo purposes only, to enable CPU load gathering
-
 set search_path to pgwatch2, public;
 
 alter database pgwatch2 set search_path to pgwatch2, public;
@@ -46,15 +42,17 @@ create table pgwatch2.monitored_db (
     md_client_cert_path text not null default '',  -- relevant for 'verify-full'
     md_client_key_path text not null default '',   -- relevant for 'verify-full'
     md_password_type text not null default 'plain-text',
+    md_host_config jsonb,
+    md_only_if_master bool not null default false,
     UNIQUE (md_unique_name),
     CONSTRAINT no_colon_on_unique_name CHECK (md_unique_name !~ ':'),
     CHECK (md_sslmode in ('disable', 'require', 'verify-ca', 'verify-full')),
-    CHECK (md_dbtype in ('postgres', 'pgbouncer', 'postgres-continuous-discovery')),
+    CHECK (md_dbtype in ('postgres', 'pgbouncer', 'postgres-continuous-discovery', 'patroni', 'patroni-continuous-discovery')),
     CHECK (md_group ~ E'\\w+'),
     CHECK (md_password_type in ('plain-text', 'aes-gcm-256'))
 );
 
-create unique index on monitored_db(md_hostname, md_port, md_dbname, md_is_enabled); -- prevent multiple active workers for the same db
+create unique index on monitored_db(md_hostname, md_port, md_dbname, md_is_enabled) where not md_dbtype ~ 'patroni'; -- prevent multiple active workers for the same db
 
 
 alter table pgwatch2.monitored_db add constraint preset_or_custom_config check
@@ -71,14 +69,24 @@ create table metric (
     m_is_active         boolean not null default 't',
     m_is_helper         boolean not null default 'f',
     m_last_modified_on  timestamptz not null default now(),
-    m_master_only bool default false,
-    m_standby_only bool default false,
+    m_master_only       bool not null default false,
+    m_standby_only      bool not null default false,
     m_column_attrs      jsonb,  -- currently only useful for Prometheus
+    m_sql_su            text default '',
 
-    unique (m_name, m_pg_version_from),
+    unique (m_name, m_pg_version_from, m_standby_only),
     check (not (m_master_only and m_standby_only)),
     check (m_name ~ '^[a-z0-9_]+$')
 );
+
+
+/* this should allow auto-rollout of schema changes for future (1.6+) releases. currently only informative */
+create table schema_version (
+    sv_tag text primary key,
+    sv_created_on timestamptz not null default now()
+);
+
+insert into pgwatch2.schema_version (sv_tag) values ('1.7.1');
 
 
 insert into pgwatch2.preset_config (pc_name, pc_description, pc_config)
@@ -86,9 +94,8 @@ insert into pgwatch2.preset_config (pc_name, pc_description, pc_config)
     '{
     "kpi": 60
     }'),
-    ('basic', 'only the most important metrics - load, WAL, DB-level statistics (size, tx and backend counts)',
+    ('basic', 'only the most important metrics - WAL, DB-level statistics (size, tx and backend counts)',
     '{
-    "cpu_load": 60,
     "wal": 60,
     "db_stats": 60,
     "db_size": 300
@@ -128,9 +135,10 @@ insert into pgwatch2.preset_config (pc_name, pc_description, pc_config)
     "table_io_stats": 600,
     "table_stats": 300,
     "wal": 60,
+    "wal_size": 300,
     "wal_receiver": 120,
     "change_events": 300,
-    "table_bloat_approx_summary": 7200
+    "table_bloat_approx_summary_sql": 7200
     }'),
     ('full', 'almost all available metrics for a even deeper performance understanding',
     '{
@@ -143,8 +151,10 @@ insert into pgwatch2.preset_config (pc_name, pc_description, pc_config)
     "index_stats": 900,
     "locks": 60,
     "locks_mode": 60,
+    "recommendations": 43200,
     "replication": 120,
     "replication_slots": 120,
+    "server_log_event_counts": 60,
     "settings": 7200,
     "sproc_stats": 180,
     "stat_statements": 180,
@@ -154,7 +164,39 @@ insert into pgwatch2.preset_config (pc_name, pc_description, pc_config)
     "wal": 60,
     "wal_size": 120,
     "change_events": 300,
-    "table_bloat_approx_summary": 7200,
+    "table_bloat_approx_summary_sql": 7200,
+    "kpi": 120,
+    "stat_ssl": 120,
+    "psutil_cpu": 120,
+    "psutil_mem": 120,
+    "psutil_disk": 120,
+    "psutil_disk_io_total": 120,
+    "wal_receiver": 120
+    }'),
+    ('full_influx', 'almost all available metrics for a even deeper performance understanding',
+    '{
+    "archiver": 60,
+    "backends": 60,
+    "bgwriter": 60,
+    "cpu_load": 60,
+    "db_stats": 60,
+    "db_size": 300,
+    "index_stats": 900,
+    "locks": 60,
+    "locks_mode": 60,
+    "replication": 120,
+    "replication_slots": 120,
+    "server_log_event_counts": 60,
+    "settings": 7200,
+    "sproc_stats": 180,
+    "stat_statements": 180,
+    "stat_statements_calls": 60,
+    "table_io_stats": 600,
+    "table_stats": 300,
+    "wal": 60,
+    "wal_size": 120,
+    "change_events": 300,
+    "table_bloat_approx_summary_sql": 7200,
     "kpi": 120,
     "stat_ssl": 120,
     "psutil_cpu": 120,
@@ -198,6 +240,30 @@ insert into pgwatch2.preset_config (pc_name, pc_description, pc_config)
     "table_stats": 1,
     "wal": 1,
     "wal_receiver": 1
+    }'),
+   ('superuser_no_python', 'like exhaustive, but no PL/Python helpers',
+    '{
+      "archiver": 60,
+      "backends": 60,
+      "bgwriter": 60,
+      "db_stats": 60,
+      "db_size": 300,
+      "index_stats": 900,
+      "locks": 60,
+      "locks_mode": 60,
+      "replication": 120,
+      "replication_slots": 120,
+      "settings": 7200,
+      "sproc_stats": 180,
+      "stat_statements": 180,
+      "stat_statements_calls": 60,
+      "table_io_stats": 600,
+      "table_stats": 300,
+      "wal": 60,
+      "wal_size": 300,
+      "wal_receiver": 120,
+      "change_events": 300,
+      "table_bloat_approx_summary_sql": 7200
     }');
 
 /* one host for demo purposes, so that "docker run" could immediately show some graphs */

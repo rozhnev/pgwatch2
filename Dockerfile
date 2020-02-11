@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 RUN apt-get -q update \
-    && apt-get -qy install wget apt-transport-https vim git supervisor postgresql postgresql-plpython-9.5 libfontconfig python3-pip python-pip libssl-dev libpq-dev \
+    && apt-get -qy install wget apt-transport-https vim git postgresql postgresql-plpython3-9.5 postgresql-plpython-9.5 libfontconfig python3-pip python-pip libssl-dev libpq-dev \
     && pip install -U pip && pip3 install -U pip \
     && locale-gen "en_US.UTF-8" && apt autoremove -y \
     && pg_dropcluster 9.5 main ; pg_createcluster --locale en_US.UTF-8 9.5 main \
@@ -13,8 +13,8 @@ RUN apt-get -q update \
 # Influxdb [https://portal.influxdata.com/downloads]
 #   latest ver.: curl -so- https://api.github.com/repos/influxdata/influxdb/tags | grep -Eo '"v[0-9\.]+"' | grep -Eo '[0-9\.]+' | sort -nr | head -1
 
-RUN wget -q -O grafana.deb https://dl.grafana.com/oss/release/grafana_6.1.4_amd64.deb \
-    && wget -q -O - https://dl.influxdata.com/influxdb/releases/influxdb_1.7.6_amd64.deb > influxdb_amd64.deb \
+RUN wget -q -O grafana.deb https://dl.grafana.com/oss/release/grafana_6.5.2_amd64.deb \
+    && wget -q -O - https://dl.influxdata.com/influxdb/releases/influxdb_1.7.9_amd64.deb > influxdb_amd64.deb \
     && dpkg -i grafana.deb && rm grafana.deb \
     && dpkg -i influxdb_amd64.deb && rm influxdb_amd64.deb \
     && sed -i 's/\# query-log-enabled = true/query-log-enabled = false/' /etc/influxdb/influxdb.conf \
@@ -22,24 +22,38 @@ RUN wget -q -O grafana.deb https://dl.grafana.com/oss/release/grafana_6.1.4_amd6
     && sed -i 's/\# store-enabled = true/store-enabled = false/' /etc/influxdb/influxdb.conf \
     && sed -i 's/\# \[http\]/\[http\]/' /etc/influxdb/influxdb.conf \
     && sed -i '0,/\# log-enabled = true/{s/\# log-enabled = true/log-enabled = false/}' /etc/influxdb/influxdb.conf \
-    && sed -i 's/\# index-version = \"inmem\"/index-version = \"tsi1\"/' /etc/influxdb/influxdb.conf
+    && sed -i 's/\# index-version = \"inmem\"/index-version = \"tsi1\"/' /etc/influxdb/influxdb.conf \
+    && sed -i 's/\# bind-address = \"127.0.0.1:8088\"/bind-address = \":8088\"/' /etc/influxdb/influxdb.conf \
+    && pip3 install supervisor && mkdir /var/log/supervisor
+
 
 # Add pgwatch2 sources
 ADD pgwatch2 /pgwatch2
 ADD webpy /pgwatch2/webpy
 
+# For showing Git versions via :8080/versions or 'pgwatch2 --version'
+ARG GIT_HASH
+ARG GIT_TIME
+ENV GIT_HASH=${GIT_HASH}
+ENV GIT_TIME=${GIT_TIME}
+
 # Go installation [https://golang.org/dl/]
 # Grafana config customizations, Web UI requirements, compilation of the Go gatherer
-RUN wget -q -O /tmp/go.tar.gz https://dl.google.com/go/go1.12.4.linux-amd64.tar.gz \
+RUN wget -q -O /tmp/go.tar.gz https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz \
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && export PATH=$PATH:/usr/local/go/bin \
     && cp /pgwatch2/bootstrap/grafana_custom_config.ini /etc/grafana/grafana.ini \
     && pip3 install -r /pgwatch2/webpy/requirements.txt \
     && pip2 install psutil \
+    && echo "$GIT_HASH" > /pgwatch2/build_git_version.txt \
     && cd /pgwatch2 && bash build_gatherer.sh \
     && rm /tmp/go.tar.gz \
     && rm -rf /usr/local/go /root/go \
     && grafana-cli plugins install savantly-heatmap-panel
+
+# both Python 2 and 3 only there for the "transition" period, to not brake some people upgrading to a newer image.
+# at some point Python2 should be dropped completely.
+RUN pip3 install psutil
 
 ADD grafana_dashboards /pgwatch2/grafana_dashboards
 

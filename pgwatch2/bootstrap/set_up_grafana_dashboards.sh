@@ -25,11 +25,11 @@ GRAFANA_MAJOR_VER=$(grafana-server -v | egrep -o [0-9]{1} | head -1)
 
 psql -h /var/run/postgresql -f /pgwatch2/bootstrap/grafana_datasource.sql pgwatch2_grafana
 
-for slug in $(ls --hide='*.md' /pgwatch2/grafana_dashboards/v${GRAFANA_MAJOR_VER}) ; do
+for slug in $(ls --hide='*.md' /pgwatch2/grafana_dashboards/influxdb/v${GRAFANA_MAJOR_VER}) ; do
 
 echo "inserting dashboard: $slug"
-TITLE=$(cat /pgwatch2/grafana_dashboards/v${GRAFANA_MAJOR_VER}/${slug}/title.txt)
-JSON=$(cat /pgwatch2/grafana_dashboards/v${GRAFANA_MAJOR_VER}/${slug}/dashboard.json)
+TITLE=$(cat /pgwatch2/grafana_dashboards/influxdb/v${GRAFANA_MAJOR_VER}/${slug}/title.txt)
+JSON=$(cat /pgwatch2/grafana_dashboards/influxdb/v${GRAFANA_MAJOR_VER}/${slug}/dashboard.json)
 
 # in Grafana 5 "uid" column was introduced that is normally filled by the app
 if [ "$GRAFANA_MAJOR_VER" -gt 4 ] ; then
@@ -54,5 +54,10 @@ SQL+=")"
 echo "$SQL" | psql -h /var/run/postgresql pgwatch2_grafana
 
 done
+
+HEALTHCHECK_STAR="INSERT INTO star (user_id, dashboard_id) SELECT 1, id FROM dashboard WHERE slug = 'health-check'"
+psql -h /var/run/postgresql -c "$HEALTHCHECK_STAR" pgwatch2_grafana
+HOME_DASH="INSERT INTO preferences (org_id, user_id, version, home_dashboard_id, timezone, theme, created, updated, team_id) SELECT 1, 0, 0, id, '', '', now(), now(), 0 FROM dashboard WHERE slug = 'health-check'"
+psql -h /var/run/postgresql -c "$HOME_DASH" pgwatch2_grafana
 
 exit 0

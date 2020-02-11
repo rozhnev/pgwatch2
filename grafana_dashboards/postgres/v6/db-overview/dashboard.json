@@ -27,7 +27,8 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
-      "description": "Current Transaction Per Second",
+      "datasource": null,
+      "description": "Last 5min data",
       "editable": true,
       "error": false,
       "format": "none",
@@ -40,10 +41,276 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 0
       },
+      "hideTimeOverride": true,
+      "id": 16,
+      "interval": "10m",
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "options": {},
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": true,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "alias": "TPS",
+          "dsType": null,
+          "format": "time_series",
+          "group": [],
+          "groupBy": [
+            {
+              "params": [
+                "$interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "metricColumn": "none",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time,\n  (data->'in_recovery_int')::int\nFROM\n  wal\nWHERE\n  $__timeFilter(time)\n  AND dbname = '$dbname'\nORDER BY time DESC\nLIMIT 1\n",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": [],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": "",
+      "timeFrom": "5m",
+      "title": "Instance state",
+      "type": "singlestat",
+      "valueFontSize": "50%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "MASTER",
+          "value": "0"
+        },
+        {
+          "op": "=",
+          "text": "REPLICA",
+          "value": "1"
+        }
+      ],
+      "valueName": "current"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorValue": false,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "datasource": null,
+      "description": "Last 5min data",
+      "editable": true,
+      "error": false,
+      "format": "dtdurations",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 3,
+        "x": 3,
+        "y": 0
+      },
+      "hideTimeOverride": true,
+      "id": 15,
+      "interval": "",
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "options": {},
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": true,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "alias": "TPS",
+          "dsType": null,
+          "format": "time_series",
+          "group": [],
+          "groupBy": [
+            {
+              "params": [
+                "$interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "metricColumn": "none",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time,\n  (data->'postmaster_uptime_s')::int\nFROM\n  wal\nWHERE\n  $__timeFilter(time)\n  AND dbname = '$dbname'\nORDER BY time DESC\nLIMIT 1\n",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": [],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": "",
+      "timeFrom": "5m",
+      "title": "Instance uptime",
+      "type": "singlestat",
+      "valueFontSize": "50%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        }
+      ],
+      "valueName": "current"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorValue": false,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "datasource": null,
+      "description": "Current Transaction Per Second (10min avg.) + 6h history",
+      "editable": true,
+      "error": false,
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 3,
+        "x": 6,
+        "y": 0
+      },
+      "hideTimeOverride": true,
       "id": 1,
       "interval": "10m",
       "links": [],
@@ -61,6 +328,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -82,7 +350,7 @@
       "targets": [
         {
           "alias": "TPS",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -102,7 +370,6 @@
           "metricColumn": "none",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "select\n  time,\n  ((c - c_lag) + (r - r_lag)) / extract(epoch from time - time_lag) as tps\nfrom (\n        select \n          (data->>'xact_commit')::int8 as c, lag((data->>'xact_commit')::int8) over w as c_lag,\n          (data->>'xact_rollback')::int8 as r, lag((data->>'xact_rollback')::int8) over w as r_lag,\n          time, lag(time) over w as time_lag\n        from db_stats \n        where dbname = '$dbname' and time > now() - '30m'::interval\n        window w as (order by time)        \n) x \nwhere c >= c_lag and r >= r_lag\norder by time\n;",
           "rawQuery": true,
           "rawSql": "select\n  $__timeGroup(time, $__interval),\n  avg(((c - c_lag) + (r - r_lag)) / extract(epoch from time - time_lag)) as tps\nfrom (\n        select \n          (data->>'xact_commit')::int8 as c, lag((data->>'xact_commit')::int8) over w as c_lag,\n          (data->>'xact_rollback')::int8 as r, lag((data->>'xact_rollback')::int8) over w as r_lag,\n          time, lag(time) over w as time_lag\n        from db_stats\n        where dbname = '$dbname' and $__timeFilter(time)\n        window w as (order by time)        \n) x\nwhere c >= c_lag and r >= r_lag and time > time_lag\ngroup by 1\norder by 1",
           "refId": "A",
@@ -155,7 +422,8 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
-      "description": "Queries Per Second based on pg_stat_statements.calls",
+      "datasource": null,
+      "description": "Queries Per Second based on pg_stat_statements.calls. 10min avg. + 6h history",
       "editable": true,
       "error": false,
       "format": "none",
@@ -168,11 +436,12 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 4,
+        "w": 3,
+        "x": 9,
         "y": 0
       },
       "height": "150",
+      "hideTimeOverride": true,
       "id": 2,
       "interval": "10m",
       "links": [],
@@ -190,6 +459,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -211,7 +481,7 @@
       "targets": [
         {
           "alias": "QPS",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -231,7 +501,6 @@
           "metricColumn": "none",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT non_negative_derivative(last(\"calls\"), 1s) FROM \"stat_statements_calls\" WHERE $timeFilter AND \"dbname\" =~ /^$dbname$/ GROUP BY time(5m) fill(none)",
           "rawQuery": true,
           "rawSql": "select\n  $__timeGroup(time, $__interval),\n  avg((c - c_lag) / extract(epoch from time - time_lag)) as qps\nfrom (\n        select \n          (data->>'calls')::int8 as c, lag((data->>'calls')::int8) over w as c_lag,\n          time, lag(time) over w as time_lag\n        from stat_statements_calls\n        where dbname = '$dbname' and $__timeFilter(time)\n        window w as (order by time)        \n) x\nwhere c >= c_lag\ngroup by 1\norder by 1\n",
           "refId": "A",
@@ -284,7 +553,8 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
-      "description": "Requries pg_stat_statements extension and the \"get_stat_statements\" helper function  from  the \"sql/metric_fetching_helpers\" folder on the monitored DB. Not including pgwatch2 generated metrics fetching queries.",
+      "datasource": null,
+      "description": "10min avg. + 6h history. Requires pg_stat_statements extension and the \"get_stat_statements\" helper function  from  the \"sql/metric_fetching_helpers\" folder on the monitored DB. Not including pgwatch2 generated metrics fetching queries.",
       "editable": true,
       "error": false,
       "format": "none",
@@ -297,11 +567,12 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 8,
+        "w": 3,
+        "x": 12,
         "y": 0
       },
       "height": "150",
+      "hideTimeOverride": true,
       "id": 3,
       "interval": "10m",
       "links": [],
@@ -319,6 +590,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": " ms",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -340,7 +612,7 @@
       "targets": [
         {
           "alias": "avg_query_runtime_per_db",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -360,7 +632,6 @@
           "metricColumn": "none",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "--select mean(q) from (SELECT non_negative_derivative(mean(\"total_time\")) / non_negative_derivative(mean(\"calls\")) as q FROM \"stat_statements\" WHERE \"dbname\" =~ /^$dbname$/ AND \"query\" !~ /(?i)::int8[\\s+]as[\\s]+epoch_ns/ AND $timeFilter GROUP BY queryid, time(5m) fill(none)) group by time(5m) fill(none)\n",
           "rawQuery": true,
           "rawSql": "select\n  time,\n  avg(avg) as \"avg_query_runtime\"\nfrom (\n\nselect\n$__timeGroup(time, $__interval),\nqueryid,\navg((tt-tt_lag)::numeric / (c-c_lag))\n\nfrom (\n\n        select \n          (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,\n          (data->>'calls')::int8 as c, lag((data->>'calls')::int8) over w as c_lag,\n          tag_data->>'queryid' as queryid,\n          time\n        from stat_statements\n        where dbname = '$dbname' and $__timeFilter(time)\n        and not tag_data->>'query' like '%$2)::int8 as epoch_ns,%' /*trying to not include queries by pgwatch itself*/\n        window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere c > c_lag and tt >= tt_lag\ngroup by 1, 2\norder by 1, 2\n) y\ngroup by 1\norder by 1",
           "refId": "A",
@@ -414,6 +685,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -427,11 +699,12 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 12,
+        "w": 3,
+        "x": 15,
         "y": 0
       },
       "height": "150",
+      "hideTimeOverride": true,
       "id": 4,
       "interval": null,
       "links": [],
@@ -449,6 +722,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": " ",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -470,7 +744,7 @@
       "targets": [
         {
           "alias": "db_size_change_last_hour",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -544,8 +818,9 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "decimals": 1,
-      "description": "Based on pgstattuple_approx, for tables >800KB",
+      "description": "Based on a pure SQL  based estimate for fast results. Re-check with \"pgstattuple\" if numbers look suspicious!",
       "editable": true,
       "error": false,
       "format": "bytes",
@@ -558,11 +833,12 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 16,
+        "w": 3,
+        "x": 18,
         "y": 0
       },
       "height": "150",
+      "hideTimeOverride": true,
       "id": 5,
       "interval": null,
       "links": [],
@@ -580,6 +856,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": " ",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -601,7 +878,7 @@
       "targets": [
         {
           "alias": "Bloat size",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -624,7 +901,7 @@
           "policy": "default",
           "query": "",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('hour', time) as time,\n  avg((data->'approx_free_space_b')::int8 + (data->'dead_tuple_len_b')::int8)\nFROM\n  table_bloat_approx_summary\nWHERE\n  $__timeFilter(time)\n  AND dbname = '$dbname'\nGROUP BY\n  1\nORDER BY\n  1\n",
+          "rawSql": "SELECT\n  time,\n  avg((data->'approx_table_bloat_b')::int8)\nFROM\n  table_bloat_approx_summary_sql\nWHERE\n  $__timeFilter(time)\n  AND dbname = '$dbname'\nGROUP BY\n  1\nORDER BY\n  1\n",
           "refId": "A",
           "resultFormat": "time_series",
           "select": [
@@ -682,11 +959,12 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
+      "datasource": null,
       "decimals": 1,
-      "description": "Last CPU load_5 value. NB! Requires get_load_average() function making use of PL/Pythonu",
+      "description": "Last CPU load_5 value + 6h history. NB! Requires get_load_average() function making use of PL/Pythonu",
       "editable": true,
       "error": false,
-      "format": "percent",
+      "format": "none",
       "gauge": {
         "maxValue": 100,
         "minValue": 0,
@@ -696,11 +974,12 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 20,
+        "w": 3,
+        "x": 21,
         "y": 0
       },
       "height": "150",
+      "hideTimeOverride": true,
       "id": 6,
       "interval": "10m",
       "links": [],
@@ -718,6 +997,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": " ",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -739,7 +1019,7 @@
       "targets": [
         {
           "alias": "load_5",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -799,7 +1079,7 @@
       "thresholds": "",
       "timeFrom": "6h",
       "timeShift": null,
-      "title": "CPU Load",
+      "title": "CPU Load Avg.",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -816,6 +1096,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "description": "",
       "editable": true,
@@ -844,6 +1125,7 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {},
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -872,7 +1154,7 @@
       "targets": [
         {
           "alias": "DELETE",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -979,6 +1261,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -1006,6 +1289,7 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {},
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -1017,7 +1301,7 @@
       "targets": [
         {
           "alias": "Shared buffers hit ratio",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1039,7 +1323,6 @@
           "metricColumn": "none",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT ( non_negative_derivative(mean(\"blks_hit\")) / (non_negative_derivative(mean(\"blks_hit\")) + non_negative_derivative(mean(\"blks_read\")))) * 100 FROM \"db_stats\" WHERE \"dbname\" =~ /^$dbname$/ AND  $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "rawSql": "select\n  $__timeGroup(time, $agg_interval),\n  avg((hit-hit_lag)::numeric / ((hit-hit_lag) + (read-read_lag)))*100 as \"Shared buffers hit ratio\",\n  avg((roll-roll_lag)::numeric / ((roll-roll_lag) + (comm-comm_lag)))*100 as \"TX rollback ratio\"\nfrom (\n        select \n          (data->>'blks_hit')::int8 as hit, lag((data->>'blks_hit')::int8) over w as hit_lag,\n          (data->>'blks_read')::int8 as read, lag((data->>'blks_read')::int8) over w as read_lag,\n          (data->>'xact_rollback')::int8 as roll, lag((data->>'xact_rollback')::int8) over w as roll_lag,\n          (data->>'xact_commit')::int8 as comm, lag((data->>'xact_commit')::int8) over w as comm_lag,\n          time\n        from db_stats\n        where dbname = '$dbname' and $__timeFilter(time)\n        window w as (order by time)\n) x\nwhere (hit > hit_lag or read > read_lag) and (roll > roll_lag or comm > comm_lag)\ngroup by 1\norder by 1",
           "refId": "A",
@@ -1121,6 +1404,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -1147,13 +1431,14 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {},
       "percentage": false,
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "Temp bytes (1h rate)",
+          "alias": "/Temp bytes/",
           "yaxis": 2
         }
       ],
@@ -1163,7 +1448,7 @@
       "targets": [
         {
           "alias": "# Sessions",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1291,6 +1576,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -1319,15 +1605,12 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {},
       "percentage": false,
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
       "seriesOverrides": [
-        {
-          "alias": "WAL rate (bytes/h)",
-          "yaxis": 2
-        },
         {
           "alias": "DB Size",
           "yaxis": 2
@@ -1339,7 +1622,7 @@
       "targets": [
         {
           "alias": "WAL rate",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1479,7 +1762,8 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "decimals": null,
+      "datasource": null,
+      "decimals": 1,
       "description": "Based on get_stat_activity() helper",
       "fill": 1,
       "gridPos": {
@@ -1503,6 +1787,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -1514,7 +1799,7 @@
       "targets": [
         {
           "alias": "idle",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1619,6 +1904,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "decimals": 1,
       "description": "Requires according \"metric fetching helpers\" on the monitored server. Not including pgwatch2 generated metrics fetching queries.",
       "fill": 1,
@@ -1643,6 +1929,7 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -1650,10 +1937,6 @@
       "seriesOverrides": [
         {
           "alias": "avg_query_runtime",
-          "yaxis": 2
-        },
-        {
-          "alias": "avg_query_runtime_approx",
           "yaxis": 2
         }
       ],
@@ -1663,7 +1946,7 @@
       "targets": [
         {
           "alias": "load_5",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1716,7 +1999,7 @@
         },
         {
           "alias": "avg_query_runtime",
-          "dsType": "influxdb",
+          "dsType": null,
           "format": "time_series",
           "group": [],
           "groupBy": [
@@ -1738,7 +2021,6 @@
           "metricColumn": "none",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "select mean(runtime) from (SELECT non_negative_derivative(last(\"total_time\"), 1h) / non_negative_derivative(last(\"calls\"), 1h) as runtime FROM \"stat_statements\" WHERE \"dbname\" =~ /^$dbname$/ AND \"query\" !~ /(?i)::int8[\\s]+as[\\s]+epoch_ns/ AND $timeFilter GROUP BY queryid, time($__interval) fill(none)) group by time($__interval) fill(none)",
           "rawQuery": true,
           "rawSql": "select\n  time,\n  avg(avg) as \"avg_query_runtime\"\nfrom (\n\nselect\n$__timeGroup(time, $agg_interval),\nqueryid,\navg((tt-tt_lag)::numeric / (c-c_lag))\n\nfrom (\n\n        select \n          (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,\n          (data->>'calls')::int8 as c, lag((data->>'calls')::int8) over w as c_lag,\n          tag_data->>'queryid' as queryid,\n          time\n        from stat_statements\n        where dbname = '$dbname' and $__timeFilter(time)\n        and not tag_data->>'query' like '%$2)::int8 as epoch_ns,%' /*trying to not include queries by pgwatch itself*/\n        window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere c > c_lag and tt >= tt_lag\ngroup by 1, 2\norder by 1, 2\n) y\ngroup by 1\norder by 1",
           "refId": "B",
@@ -1789,7 +2071,7 @@
       "yaxes": [
         {
           "decimals": 1,
-          "format": "percent",
+          "format": "none",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1812,7 +2094,8 @@
       }
     },
     {
-      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2017/11/Cybertec_Logo_2017_300px_slogan_trans.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
+      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2019/05/Cybertec_Logo_wei%C3%9F-transparent_300x80px-01.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
+      "datasource": null,
       "editable": true,
       "error": false,
       "gridPos": {
@@ -1824,6 +2107,7 @@
       "id": 14,
       "links": [],
       "mode": "html",
+      "options": {},
       "title": "",
       "transparent": true,
       "type": "text"

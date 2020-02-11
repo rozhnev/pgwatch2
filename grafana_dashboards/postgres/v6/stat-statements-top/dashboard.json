@@ -20,6 +20,7 @@
   "panels": [
     {
       "columns": [],
+      "datasource": null,
       "description": "",
       "fontSize": "90%",
       "gridPos": {
@@ -30,6 +31,7 @@
       },
       "id": 5,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -60,7 +62,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Single query details' dashboard for that queryid",
-          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell",
+          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell&from=$__from&to=$__to",
           "pattern": "queryid",
           "sanitize": false,
           "thresholds": [],
@@ -102,6 +104,22 @@
           "thresholds": [],
           "type": "string",
           "unit": "short"
+        },
+        {
+          "alias": "",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 1,
+          "mappingType": 1,
+          "pattern": "approx_pct_db_total_time",
+          "thresholds": [],
+          "type": "number",
+          "unit": "percent"
         }
       ],
       "targets": [
@@ -129,7 +147,7 @@
           "policy": "default",
           "query": "SELECT top(\"spread\", \"queryid\", \"query\", $top) FROM (SELECT spread(\"total_time\") FROM \"stat_statements\" WHERE $timeFilter AND \"dbname\" = '$dbname' GROUP BY time(3650d), \"queryid\", \"query\" fill(none) ) WHERE spread > 0",
           "rawQuery": true,
-          "rawSql": "select\n  (sum(tt - tt_lag))::int8 as top,\n  queryid,\n  case when length(query) > 250 then query::varchar(250) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query,\n    (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere tt >= tt_lag\ngroup by 2, 3\norder by 1 desc nulls last\nlimit $top\n\n",
+          "rawSql": "select\n  (sum(tt - tt_lag))::int8 as top,\n  round(((sum(tt - tt_lag))::int8 / total::numeric)*100, 1) as approx_pct_db_total_time,\n  queryid,\n  (select users from stat_statements where $__timeFilter(time) and dbname = '$dbname' and tag_data->>'queryid' = queryid order by time desc limit 1) as \"Users\",  \n  case when length(query) > 250 then query::varchar(250) || '...' else query end as query\nfrom (\nselect\n  *,\n  sum(tt - tt_lag) over() as total\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query, data->>'users' as users,\n    (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n    and case when '$hide_pgwatch_generated' = 'yes' then not tag_data->>'query' ~* E'\\\\(extract\\\\(\\\\$\\\\d+\\\\W*from\\\\W*now\\\\(\\\\)\\\\)\\\\W?\\\\*\\\\W*\\\\$\\\\d+\\\\).*::\\\\w+\\\\W+as\\\\W+epoch_ns\\\\W*,'\n        and not tag_data->>'query' ~* E'/\\\\*\\\\W*pgwatch2_generated\\\\W*\\\\*/'  else true end\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere tt >= tt_lag\n) y\ngroup by total,queryid,query,\"Users\"\nhaving sum(tt - tt_lag) > 0\norder by 1 desc nulls last\nlimit $top\n\n",
           "refId": "A",
           "resultFormat": "table",
           "select": [
@@ -163,6 +181,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "",
       "fontSize": "90%",
       "gridPos": {
@@ -173,6 +192,7 @@
       },
       "id": 6,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -203,7 +223,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Single query details' dashboard for that queryid",
-          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell",
+          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell&from=$__from&to=$__to",
           "pattern": "queryid",
           "sanitize": false,
           "thresholds": [],
@@ -272,7 +292,7 @@
           "policy": "default",
           "query": "select top(avg, \"queryid\", \"query\", $top) AS top from (select mean(t) / mean(c) AS avg from (SELECT spread(\"total_time\") AS t, spread(\"calls\") AS c FROM \"stat_statements\" WHERE $timeFilter AND dbname = '$dbname' GROUP BY time(3650d), \"queryid\", \"query\" fill(none) )  where $timeFilter AND c > 0 group by time(3650d),  \"queryid\", \"query\" )",
           "rawQuery": true,
-          "rawSql": "select\n  (avg((tt - tt_lag)::numeric / (calls - calls_lag)))::int8 as top,\n  queryid,\n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query,\n    (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,\n    (data->>'calls')::int8 as calls, lag((data->>'calls')::int8) over w as calls_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere calls > calls_lag\ngroup by 2, 3\norder by 1 desc nulls last\nlimit $top\n\n",
+          "rawSql": "select\n  (avg((tt - tt_lag)::numeric / (calls - calls_lag)))::int8 as top,\n  queryid,\n  (select users from stat_statements where $__timeFilter(time) and dbname = '$dbname' and tag_data->>'queryid' = queryid order by time desc limit 1) as \"Users\",\n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query, data->>'users' as users,\n    (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,\n    (data->>'calls')::int8 as calls, lag((data->>'calls')::int8) over w as calls_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n    and case when '$hide_pgwatch_generated' = 'yes' then not tag_data->>'query' ~* E'\\\\(extract\\\\(\\\\$\\\\d+\\\\W*from\\\\W*now\\\\(\\\\)\\\\)\\\\W?\\\\*\\\\W*\\\\$\\\\d+\\\\).*::\\\\w+\\\\W+as\\\\W+epoch_ns\\\\W*,'\n        and not tag_data->>'query' ~* E'/\\\\*\\\\W*pgwatch2_generated\\\\W*\\\\*/'  else true end\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere calls > calls_lag\ngroup by 2, 3, 4\norder by 1 desc nulls last\nlimit $top\n\n",
           "refId": "A",
           "resultFormat": "table",
           "select": [
@@ -306,6 +326,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "",
       "fontSize": "90%",
       "gridPos": {
@@ -316,6 +337,7 @@
       },
       "id": 7,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -346,7 +368,7 @@
           "link": true,
           "linkTargetBlank": true,
           "linkTooltip": "Opens  'Single query details' dashboard for that queryid",
-          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell",
+          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell&from=$__from&to=$__to",
           "pattern": "queryid",
           "sanitize": false,
           "thresholds": [],
@@ -415,7 +437,7 @@
           "policy": "default",
           "query": "SELECT top(\"spread\", \"queryid\", \"query\", $top) FROM (SELECT spread(\"calls\") FROM \"stat_statements\" WHERE $timeFilter AND \"dbname\" = '$dbname' GROUP BY time(3650d), \"queryid\", \"query\" fill(none) ) WHERE spread > 0",
           "rawQuery": true,
-          "rawSql": "select\n  sum(calls - calls_lag)::int8 as top,\n  queryid,\n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query,\n    (data->>'calls')::int8 as calls, lag((data->>'calls')::int8) over w as calls_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere calls > calls_lag\ngroup by 2, 3\norder by 1 desc nulls last\nlimit $top\n\n",
+          "rawSql": "select\n  sum(calls - calls_lag)::int8 as top,\n  queryid,\n  (select users from stat_statements where $__timeFilter(time) and dbname = '$dbname' and tag_data->>'queryid' = queryid order by time desc limit 1) as \"Users\",  \n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query, data->>'users' as users,\n    (data->>'calls')::int8 as calls, lag((data->>'calls')::int8) over w as calls_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n    and case when '$hide_pgwatch_generated' = 'yes' then not tag_data->>'query' ~* E'\\\\(extract\\\\(\\\\$\\\\d+\\\\W*from\\\\W*now\\\\(\\\\)\\\\)\\\\W?\\\\*\\\\W*\\\\$\\\\d+\\\\).*::\\\\w+\\\\W+as\\\\W+epoch_ns\\\\W*,'\n        and not tag_data->>'query' ~* E'/\\\\*\\\\W*pgwatch2_generated\\\\W*\\\\*/'  else true end    \n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere calls > calls_lag\ngroup by 2, 3, 4\norder by 1 desc nulls last\nlimit $top\n\n",
           "refId": "A",
           "resultFormat": "table",
           "select": [
@@ -449,6 +471,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "total_time - blk_read_time -blk_write_time. Requires track_io_timing=on",
       "fontSize": "100%",
       "gridPos": {
@@ -459,6 +482,7 @@
       },
       "id": 9,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -499,10 +523,10 @@
           "decimals": 2,
           "link": true,
           "linkTooltip": "Opens  'Single query details' dashboard for that queryid",
-          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell",
+          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell&from=$__from&to=$__to",
           "pattern": "queryid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         },
         {
@@ -550,7 +574,7 @@
           "policy": "default",
           "query": "SELECT top(\"spread\", \"queryid\", \"query\", $top) FROM (SELECT spread(\"blk_read_time\") + spread(\"blk_write_time\") AS spread FROM \"stat_statements\" WHERE $timeFilter AND \"dbname\" = '$dbname' GROUP BY time(3650d), \"queryid\", \"query\" fill(none) ) WHERE spread > 0",
           "rawQuery": true,
-          "rawSql": "select\n  sum((tt - tt_lag) - (wt - wt_lag) - (rt - rt_lag))::int8 as top,\n  queryid,\n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query,\n    (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,    \n    (data->>'blk_read_time')::float8 as rt, lag((data->>'blk_read_time')::float8) over w as rt_lag,\n    (data->>'blk_write_time')::float8 as wt, lag((data->>'blk_write_time')::float8) over w as wt_lag,    \n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere tt > tt_lag\ngroup by 2, 3\norder by 1 desc nulls last\nlimit $top\n\n",
+          "rawSql": "select\n  sum((tt - tt_lag) - (wt - wt_lag) - (rt - rt_lag))::int8 as top,\n  queryid,\n  (select users from stat_statements where $__timeFilter(time) and dbname = '$dbname' and tag_data->>'queryid' = queryid order by time desc limit 1) as \"Users\",  \n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query, data->>'users' as users,\n    (data->>'total_time')::float8 as tt, lag((data->>'total_time')::float8) over w as tt_lag,    \n    (data->>'blk_read_time')::float8 as rt, lag((data->>'blk_read_time')::float8) over w as rt_lag,\n    (data->>'blk_write_time')::float8 as wt, lag((data->>'blk_write_time')::float8) over w as wt_lag,    \n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n    and case when '$hide_pgwatch_generated' = 'yes' then not tag_data->>'query' ~* E'\\\\(extract\\\\(\\\\$\\\\d+\\\\W*from\\\\W*now\\\\(\\\\)\\\\)\\\\W?\\\\*\\\\W*\\\\$\\\\d+\\\\).*::\\\\w+\\\\W+as\\\\W+epoch_ns\\\\W*,'\n        and not tag_data->>'query' ~* E'/\\\\*\\\\W*pgwatch2_generated\\\\W*\\\\*/'  else true end    \n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere tt > tt_lag\ngroup by 2, 3, 4\norder by 1 desc nulls last\nlimit $top\n\n",
           "refId": "A",
           "resultFormat": "table",
           "select": [
@@ -584,6 +608,7 @@
     },
     {
       "columns": [],
+      "datasource": null,
       "description": "Does not include Shared Buffer activities. Same as 'By total runtime' if no direct IO was performed. Requires track_io_timing=on",
       "fontSize": "100%",
       "gridPos": {
@@ -594,6 +619,7 @@
       },
       "id": 8,
       "links": [],
+      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -634,10 +660,10 @@
           "decimals": 2,
           "link": true,
           "linkTooltip": "Opens  'Single query details' dashboard for that queryid",
-          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell",
+          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell&from=$__from&to=$__to",
           "pattern": "queryid",
           "thresholds": [],
-          "type": "number",
+          "type": "string",
           "unit": "short"
         },
         {
@@ -685,7 +711,7 @@
           "policy": "default",
           "query": "SELECT top(\"spread\", \"queryid\", \"query\", $top) FROM (SELECT spread(\"blk_read_time\") + spread(\"blk_write_time\") AS spread FROM \"stat_statements\" WHERE $timeFilter AND \"dbname\" = '$dbname' GROUP BY time(3650d), \"queryid\", \"query\" fill(none) ) WHERE spread > 0",
           "rawQuery": true,
-          "rawSql": "select\n  sum((wt - wt_lag) + (rt - rt_lag))::int8 as top,\n  queryid,\n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query,\n    (data->>'blk_read_time')::float8 as rt, lag((data->>'blk_read_time')::float8) over w as rt_lag,\n    (data->>'blk_write_time')::float8 as wt, lag((data->>'blk_write_time')::float8) over w as wt_lag,    \n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere rt > rt_lag or wt > wt_lag\ngroup by 2, 3\norder by 1 desc nulls last\nlimit $top\n\n",
+          "rawSql": "select\n  sum((wt - wt_lag) + (rt - rt_lag))::int8 as top,\n  queryid,\n  (select users from stat_statements where $__timeFilter(time) and dbname = '$dbname' and tag_data->>'queryid' = queryid order by time desc limit 1) as \"Users\",  \n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query, data->>'users' as users,\n    (data->>'blk_read_time')::float8 as rt, lag((data->>'blk_read_time')::float8) over w as rt_lag,\n    (data->>'blk_write_time')::float8 as wt, lag((data->>'blk_write_time')::float8) over w as wt_lag,    \n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n    and case when '$hide_pgwatch_generated' = 'yes' then not tag_data->>'query' ~* E'\\\\(extract\\\\(\\\\$\\\\d+\\\\W*from\\\\W*now\\\\(\\\\)\\\\)\\\\W?\\\\*\\\\W*\\\\$\\\\d+\\\\).*::\\\\w+\\\\W+as\\\\W+epoch_ns\\\\W*,'\n        and not tag_data->>'query' ~* E'/\\\\*\\\\W*pgwatch2_generated\\\\W*\\\\*/'  else true end    \n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere rt > rt_lag or wt > wt_lag\ngroup by 2, 3, 4\norder by 1 desc nulls last\nlimit $top\n\n",
           "refId": "A",
           "resultFormat": "table",
           "select": [
@@ -718,18 +744,162 @@
       "type": "table"
     },
     {
-      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2017/11/Cybertec_Logo_2017_300px_slogan_trans.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
-      "editable": true,
-      "error": false,
+      "columns": [],
+      "datasource": null,
+      "description": "Shared buffer + temp buffer reading / writing",
+      "fontSize": "100%",
       "gridPos": {
         "h": 7,
         "w": 24,
         "x": 0,
         "y": 35
       },
+      "id": 10,
+      "links": [],
+      "options": {},
+      "pageSize": null,
+      "scroll": true,
+      "showHeader": true,
+      "sort": {
+        "col": 0,
+        "desc": true
+      },
+      "styles": [
+        {
+          "alias": "Time",
+          "align": "auto",
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "pattern": "Time",
+          "type": "hidden"
+        },
+        {
+          "alias": "Block bandwith",
+          "align": "auto",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "decimals": 1,
+          "pattern": "top",
+          "thresholds": [],
+          "type": "number",
+          "unit": "decbytes"
+        },
+        {
+          "alias": "Query ID",
+          "align": "auto",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "link": true,
+          "linkTargetBlank": true,
+          "linkTooltip": "Opens  'Single query details' dashboard for that queryid",
+          "linkUrl": "/dashboard/db/single-query-details?orgId=1&var-dbname=$dbname&var-queryid=$__cell&from=$__from&to=$__to",
+          "pattern": "queryid",
+          "thresholds": [],
+          "type": "string",
+          "unit": "short"
+        },
+        {
+          "alias": "Query",
+          "align": "auto",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "link": false,
+          "linkTargetBlank": true,
+          "linkTooltip": "Use 'edit' mode to be able to copy the query text",
+          "linkUrl": "",
+          "pattern": "query",
+          "sanitize": true,
+          "thresholds": [],
+          "type": "string",
+          "unit": "short"
+        }
+      ],
+      "targets": [
+        {
+          "dsType": "influxdb",
+          "format": "table",
+          "group": [],
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "metricColumn": "none",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT top(\"spread\", \"queryid\", \"query\", $top) FROM (SELECT spread(\"blk_read_time\") + spread(\"blk_write_time\") AS spread FROM \"stat_statements\" WHERE $timeFilter AND \"dbname\" = '$dbname' GROUP BY time(3650d), \"queryid\", \"query\" fill(none) ) WHERE spread > 0",
+          "rawQuery": true,
+          "rawSql": "select\n  sum(blocks_touched - blocks_touched_lag)*8192 /*assuming default 8k block size*/ as top,\n  queryid,\n  (select users from stat_statements where $__timeFilter(time) and dbname = '$dbname' and tag_data->>'queryid' = queryid order by time desc limit 1) as \"Users\",  \n  case when length(query) > 200 then query::varchar(200) || '...' else query end as query\nfrom (\n  select\n    tag_data->>'queryid' as queryid, tag_data->>'query' as query, data->>'users' as users,\n    (data->>'shared_blks_hit')::int8 + (data->>'shared_blks_read')::int8 + (data->>'shared_blks_dirtied')::int8 + (data->>'shared_blks_written')::int8\n     + (data->>'temp_blks_read')::int8 + (data->>'temp_blks_written')::int8 as blocks_touched,\n    lag((data->>'shared_blks_hit')::int8 + (data->>'shared_blks_read')::int8 + (data->>'shared_blks_dirtied')::int8 + (data->>'shared_blks_written')::int8\n     + (data->>'temp_blks_read')::int8 + (data->>'temp_blks_written')::int8) over w as blocks_touched_lag,\n    time\n  from stat_statements\n    where dbname = '$dbname'\n    and $__timeFilter(time)\n    and case when '$hide_pgwatch_generated' = 'yes' then not tag_data->>'query' ~* E'\\\\(extract\\\\(\\\\$\\\\d+\\\\W*from\\\\W*now\\\\(\\\\)\\\\)\\\\W?\\\\*\\\\W*\\\\$\\\\d+\\\\).*::\\\\w+\\\\W+as\\\\W+epoch_ns\\\\W*,'\n        and not tag_data->>'query' ~* E'/\\\\*\\\\W*pgwatch2_generated\\\\W*\\\\*/'  else true end    \n  window w as (partition by tag_data->>'queryid' order by time)\n) x\nwhere blocks_touched >= blocks_touched_lag\ngroup by 2, 3, 4\nhaving sum(blocks_touched - blocks_touched_lag) > 0\norder by 1 desc nulls last\nlimit $top\n\n",
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": [],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Top by block bandwith (assuming 8K blocks)",
+      "transform": "table",
+      "type": "table"
+    },
+    {
+      "content": "Brought to you by: <a href=\"https://www.cybertec-postgresql.com/en/\"><img src=\"https://www.cybertec-postgresql.com/wp-content/uploads/2019/05/Cybertec_Logo_wei%C3%9F-transparent_300x80px-01.png\" alt=\"Cybertec – The PostgreSQL Database Company\"></a>",
+      "datasource": null,
+      "editable": true,
+      "error": false,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
       "id": 4,
       "links": [],
       "mode": "html",
+      "options": {},
       "title": "",
       "transparent": true,
       "type": "text"
@@ -825,6 +995,34 @@
           }
         ],
         "query": "1,3,5,10,15,20,30,40,50",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "tags": [],
+          "text": "yes",
+          "value": "yes"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "hide_pgwatch_generated",
+        "options": [
+          {
+            "selected": true,
+            "text": "yes",
+            "value": "yes"
+          },
+          {
+            "selected": false,
+            "text": "no",
+            "value": "no"
+          }
+        ],
+        "query": "yes,no",
         "skipUrlSync": false,
         "type": "custom"
       }
